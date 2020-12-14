@@ -1,0 +1,4 @@
+Project type ：MOV file
+The video time：00：00：09
+Location: Temple
+Video size: 6,284,604  bytes

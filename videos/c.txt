@@ -1,0 +1,4 @@
+Project type ：MOV file
+The video time：00：00：11
+Location: Sea
+Video size: 13,962,186 bytes
