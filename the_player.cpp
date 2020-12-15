@@ -12,41 +12,36 @@ ThePlayer::ThePlayer() : QMediaPlayer(NULL) {
     connect (this, SIGNAL (stateChanged(QMediaPlayer::State)), this, SLOT (playStateChanged(QMediaPlayer::State)) );
 
     videoWidget = new QVideoWidget;
+ //   videoWidget->setFixedHeight(400);
     this->setVideoOutput(videoWidget);
 
     const QString qVidButtonStyleSheet = "QPushButton { background-color: #3949ab; color: white; border-radius: 8px;} QPushButton:hover {background-color: #6f74dd;}";
 
     //set up the playback buttons
     playButton = new QPushButton;
-    playButton->setIconSize(QSize(90,40));
+    playButton->setIconSize(QSize(40,40));
     playButton->setStyleSheet(qVidButtonStyleSheet);
     playButton->setIcon(QIcon((":/playback_images/pause.png")));
-    connect(playButton, SIGNAL (released()), this, SLOT (playClicked()));
 
     ffButton = new QPushButton;
-    ffButton->setIconSize(QSize(90,40));
+    ffButton->setIconSize(QSize(40,40));
     ffButton->setStyleSheet(qVidButtonStyleSheet);
     ffButton->setIcon(QIcon((":/playback_images/ff.png")));
-    connect(ffButton, SIGNAL (released()), this, SLOT (ffClicked()));
 
     rewindButton = new QPushButton;
-    rewindButton->setIconSize(QSize(90,40));
+    rewindButton->setIconSize(QSize(40,40));
     rewindButton->setStyleSheet(qVidButtonStyleSheet);
     rewindButton->setIcon(QIcon((":/playback_images/rewind.png")));
-    connect(rewindButton, SIGNAL (released()), this, SLOT (rewindClicked()));
 
     nextButton = new QPushButton;
-    nextButton->setIconSize(QSize(90,40));
+    nextButton->setIconSize(QSize(40,40));
     nextButton->setStyleSheet(qVidButtonStyleSheet);
     nextButton->setIcon(QIcon((":/playback_images/next.png")));
-    connect(nextButton, SIGNAL (released()), this, SLOT (nextClicked()));
 
     restartButton = new QPushButton;
-    restartButton->setIconSize(QSize(90,40));
+    restartButton->setIconSize(QSize(40,40));
     restartButton->setStyleSheet(qVidButtonStyleSheet);
     restartButton->setIcon(QIcon((":/playback_images/restart.png")));
-    connect(restartButton, SIGNAL (released()), this, SLOT (restartClicked()));
-
 
     //set up the layout
     QVBoxLayout *mainLayout = new QVBoxLayout();
@@ -91,61 +86,6 @@ void ThePlayer::playStateChanged (QMediaPlayer::State ms) {
     default:
         break;
     }
-}
-
-void ThePlayer::playClicked() {
-
-    if (playbackRate() != 1) {
-        setPlaybackRate(1);
-        playButton->setIcon(QIcon((":/playback_images/pause.png")));
-        return;
-    }
-
-    switch (this->state()) {
-    case QMediaPlayer::State::StoppedState:
-        play();
-        playButton->setIcon(QIcon((":/playback_images/pause.png")));
-        break;
-    case QMediaPlayer::State::PausedState:
-        play();
-        playButton->setIcon(QIcon((":/playback_images/pause.png")));
-        break;
-    case QMediaPlayer::State::PlayingState:
-        pause();
-        playButton->setIcon(QIcon((":/playback_images/play.png")));
-        break;
-    }
-}
-
-void ThePlayer::ffClicked() {
-    playButton->setIcon(QIcon((":/playback_images/play.png")));
-    setPlaybackRate(2);
-}
-
-void ThePlayer::rewindClicked() {
-    playButton->setIcon(QIcon((":/playback_images/play.png")));
-    setPlaybackRate(-2);
-}
-
-void ThePlayer::nextClicked() {
-    TheButtonInfo *temp = currentInfo;
-
-    currentInfo = buttons->at(0)->info;
-    setMedia(* currentInfo->url);
-    setPlaybackRate(1);
-    play();
-
-    //move all of the videos in up next up by 1 and replace last video with the one that was previously playing
-    for (unsigned long long i=0; i < buttons->size()-1; i++) {
-        buttons->at(i)->init(buttons->at(i+1)->info);
-    }
-    buttons->at(buttons->size()-1)->init(temp);
-}
-
-void ThePlayer::restartClicked() {
-    setMedia(*currentInfo->url);
-    setPlaybackRate(1);
-    play();
 }
 
 void ThePlayer::jumpTo (TheButtonInfo* button) {

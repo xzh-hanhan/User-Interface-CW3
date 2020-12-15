@@ -44,12 +44,6 @@ public:
     QWidget* getDisplay() const { return display; }
 
 private slots:
-    void playClicked();
-    void ffClicked();
-    void rewindClicked();
-    void nextClicked();
-    void restartClicked();
-
     void playStateChanged (QMediaPlayer::State ms);
 
 public slots:

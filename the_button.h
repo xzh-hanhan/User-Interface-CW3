@@ -8,7 +8,6 @@
 
 #include <QPushButton>
 #include <QUrl>
-#include <QToolTip>
 
 
 class TheButtonInfo {
@@ -16,9 +15,8 @@ class TheButtonInfo {
 public:
     QUrl* url; // video file to play
     QIcon* icon; // icon to display
-    QString string;//information to disaplay
 
-    TheButtonInfo ( QUrl* url, QIcon* icon,QString string) : url (url), icon (icon),string(string) {}
+    TheButtonInfo ( QUrl* url, QIcon* icon) : url (url), icon (icon) {}
 };
 
 class TheButton : public QPushButton {
@@ -33,12 +31,7 @@ public:
          connect(this, SIGNAL(released()), this, SLOT (clicked() )); // if QPushButton clicked...then run clicked() below
     }
 
-    void enterEvent(QEvent *e);
-    void leaveEvent(QEvent *e);
-//    bool event(QEvent *e);
-
     void init(TheButtonInfo* i);
-
 
 private slots:
     void clicked();

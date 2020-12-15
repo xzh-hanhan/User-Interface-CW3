@@ -55,18 +55,13 @@ vector<TheButtonInfo> getInfoIn (string loc) {
 #endif
 
             QString thumb = f.left( f .length() - 4) +".png";
-            QString text = f.left( f .length() - 4) + ".txt";
-            QFile *file =new QFile(text);
-            file->open(QIODevice::ReadOnly|QIODevice::Text);
-            QString data =QString(file->readAll());
-
             if (QFile(thumb).exists()) { // if a png thumbnail exists
                 QImageReader *imageReader = new QImageReader(thumb);
                     QImage sprite = imageReader->read(); // read the thumbnail
                     if (!sprite.isNull()) {
                         QIcon* ico = new QIcon(QPixmap::fromImage(sprite)); // voodoo to create an icon for the button
                         QUrl* url = new QUrl(QUrl::fromLocalFile( f )); // convert the file location to a generic url
-                        out . push_back(TheButtonInfo( url , ico , data ) ); // add to the output list
+                        out . push_back(TheButtonInfo( url , ico  ) ); // add to the output list
                     }
                     else
                         qDebug() << "1 warning: skipping video because I couldn't process thumbnail " << thumb << endl;
@@ -79,7 +74,7 @@ vector<TheButtonInfo> getInfoIn (string loc) {
                     if (!missingThumbSprite.isNull()) {
                         QIcon* ico = new QIcon(QPixmap::fromImage(missingThumbSprite)); // voodoo to create an icon for the button
                         QUrl* url = new QUrl(QUrl::fromLocalFile( f )); // convert the file location to a generic url
-                        out . push_back(TheButtonInfo( url , ico ,data ) ); // add to the output list
+                        out . push_back(TheButtonInfo( url , ico  ) ); // add to the output list
                     }
                     else
                         qDebug() << "2 warning: skipping video because I couldn't process thumbnail " << missingThumb << endl;
@@ -126,8 +121,8 @@ int main(int argc, char *argv[]) {
     }
 
 
-
-
+    // the widget that will show the video (created in the play now)
+//    QVideoWidget *videoWidget = new QVideoWidget;
 
     // the QMediaPlayer which controls the playback
     ThePlayer *player = new ThePlayer;
@@ -137,16 +132,8 @@ int main(int argc, char *argv[]) {
     // a list of the buttons
     vector<TheButton*> buttons;
     // the buttons are arranged horizontally
-    //QHBoxLayout *layout = new QHBoxLayout();
-    QVBoxLayout *layout = new QVBoxLayout();
+    QHBoxLayout *layout = new QHBoxLayout();
     buttonWidget->setLayout(layout);
-
-
-    QLabel *upNextTitle = new QLabel(buttonWidget);
-    upNextTitle->setText("Playlist:");
-    upNextTitle->setGeometry(0,0,20,20);
-    upNextTitle->setStyleSheet("font-weight: bold; font: 30pt Arial Bold");
-    layout->addWidget(upNextTitle);
 
     // create buttons for all videos
     for ( unsigned long long i = 0; i < videos.size()-1; i++ ) {
@@ -154,7 +141,6 @@ int main(int argc, char *argv[]) {
         button->setStyleSheet(
                     "text-align:left;"
                     );
-//        button->info->string = QString::number(i,10);
         button->connect(button, SIGNAL(jumpTo(TheButtonInfo* )), player, SLOT (jumpTo(TheButtonInfo* ))); // when clicked, tell the player to play.
         buttons.push_back(button);
         layout->addWidget(button);
@@ -172,27 +158,17 @@ int main(int argc, char *argv[]) {
     window.setWindowTitle("Tomeo Editor");
     window.setMinimumSize(800, 680);
 
-    QWidget *navigationWidget = new QWidget();
-    //navigationWidget->setGeometry(0,0,window.width(),20);
-    navigationWidget->setFixedSize(window.width(),50);
-    QLabel *pageTitle = new QLabel(navigationWidget);
-    pageTitle->setText("Tomeo Prototype");
-    pageTitle->setGeometry(0,0,navigationWidget->width(),navigationWidget->height());
-    pageTitle->setStyleSheet("font-weight: bold; font: 30pt Arial Bold");
-
-    mainContainer->addWidget(navigationWidget);
 
     QWidget *playerDisplay = player->getDisplay();
-    QHBoxLayout *videoPreviewContainer = new QHBoxLayout();
+    QVBoxLayout *videoPreviewContainer = new QVBoxLayout();
     // add the video and the buttons to the top level
     videoPreviewContainer->addWidget(playerDisplay);
 
     QScrollArea *scrollArea = new QScrollArea;
     scrollArea->setBackgroundRole(QPalette::Dark);
     scrollArea->setWidget(buttonWidget);
-    scrollArea->setFixedWidth(295);
     videoPreviewContainer->addWidget(scrollArea);
-
+    playerDisplay->setFixedHeight(window.height()-200);
     mainContainer->addLayout(videoPreviewContainer);
     // showtime!
     window.show();
