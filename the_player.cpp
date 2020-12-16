@@ -8,11 +8,15 @@ using namespace std;
 
 ThePlayer::ThePlayer() : QMediaPlayer(NULL) {
     setVolume(0); // be slightly less annoying
+    setNotifyInterval(1);
 
     connect (this, SIGNAL (stateChanged(QMediaPlayer::State)), this, SLOT (playStateChanged(QMediaPlayer::State)) );
 
     videoWidget = new QVideoWidget;
     this->setVideoOutput(videoWidget);
+
+//    timeSlider = new QSlider(Qt::Horizontal);
+
 
     const QString qVidButtonStyleSheet = "QPushButton { background-color: #3949ab; color: white; border-radius: 8px;} QPushButton:hover {background-color: #6f74dd;}";
 
@@ -47,21 +51,34 @@ ThePlayer::ThePlayer() : QMediaPlayer(NULL) {
     restartButton->setIcon(QIcon((":/playback_images/restart.png")));
     connect(restartButton, SIGNAL (released()), this, SLOT (restartClicked()));
 
+    listBtn = new QPushButton;
+    listBtn->setIconSize(QSize(90,40));
+    listBtn->setStyleSheet(qVidButtonStyleSheet);
+    listBtn->setCheckable(true);
+    listBtn->setIcon(QIcon((":/playback_images/hidden.png")));
+    connect(listBtn,SIGNAL(clicked(bool)),this,SIGNAL(sigOpenList(bool)));
 
     //set up the layout
     QVBoxLayout *mainLayout = new QVBoxLayout();
     mainLayout->addWidget(videoWidget);
-
+    mainLayout->addWidget(timeSlider);
     QHBoxLayout *controlsLayout = new QHBoxLayout();
     controlsLayout->addWidget(restartButton);
     controlsLayout->addWidget(rewindButton);
     controlsLayout->addWidget(playButton);
     controlsLayout->addWidget(ffButton);
     controlsLayout->addWidget(nextButton);
+    controlsLayout->addWidget(listBtn);
     mainLayout->addLayout(controlsLayout);
 
     display = new QWidget;
     display->setLayout(mainLayout);
+
+//    connect(timeSlider,SIGNAL(sliderPressed()),this,SLOT(onPress()));
+//    connect(timeSlider,SIGNAL(sliderReleased()),this,SLOT(onRelease()));
+
+//    connect(this,SIGNAL(positionChanged(qint64)),this,SLOT(onPosition(qint64)));
+//    connect(this,SIGNAL(durationChanged(qint64)),this,SLOT(onDuration(qint64)));
 }
 
 // all buttons have been setup, store pointers here
@@ -92,6 +109,28 @@ void ThePlayer::playStateChanged (QMediaPlayer::State ms) {
         break;
     }
 }
+
+//void ThePlayer::onPosition(qint64 time)
+//{
+//    if(!isPress)
+//        timeSlider->setValue(time);
+//}
+
+//void ThePlayer::onDuration(qint64 time)
+//{
+//    timeSlider->setRange(0,time);
+//}
+
+//void ThePlayer::onPress()
+//{
+//    isPress = true;
+//}
+
+//void ThePlayer::onRelease()
+//{
+//    isPress = false;
+//    this->setPosition(timeSlider->value());
+//}
 
 void ThePlayer::playClicked() {
 

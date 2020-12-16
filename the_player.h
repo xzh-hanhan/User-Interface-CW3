@@ -13,6 +13,7 @@
 #include <QTimer>
 #include <QVideoWidget>
 #include <QVBoxLayout>
+#include <QSlider>
 
 using namespace std;
 
@@ -33,8 +34,11 @@ private:
     QPushButton *rewindButton = 0;
     QPushButton *nextButton = 0;
     QPushButton *restartButton = 0;
+    QPushButton* listBtn = 0;
+    QSlider* timeSlider = 0;
     QWidget *display = 0;
 
+    bool isPress = false;
 public:
     ThePlayer();
 
@@ -42,6 +46,9 @@ public:
     void setContent(vector<TheButton*>* b, vector<TheButtonInfo>* i);
 
     QWidget* getDisplay() const { return display; }
+
+signals:
+    void sigOpenList(bool flag);
 
 private slots:
     void playClicked();
@@ -52,6 +59,13 @@ private slots:
 
     void playStateChanged (QMediaPlayer::State ms);
 
+//    void onPosition(qint64 time);
+
+//    void onDuration(qint64 time);
+
+//    void onPress();
+
+//    void onRelease();
 public slots:
     // start playing this ButtonInfo
     void jumpTo (TheButtonInfo* button);

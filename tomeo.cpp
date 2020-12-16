@@ -197,6 +197,10 @@ int main(int argc, char *argv[]) {
     // showtime!
     window.show();
 
+    QObject::connect(player,&ThePlayer::sigOpenList,[=](bool flag){
+        scrollArea->setVisible(!flag);
+    });
+
     // wait for the app to terminate
     return app.exec();
 }
