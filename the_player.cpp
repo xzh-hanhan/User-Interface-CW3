@@ -3,82 +3,82 @@
 //
 
 #include "the_player.h"
+#include<QHelpEvent>
+#include<QToolTip>
 
 using namespace std;
+
 
 ThePlayer::ThePlayer() : QMediaPlayer(NULL) {
     setVolume(0); // be slightly less annoying
     setNotifyInterval(1);
 
-    connect (this, SIGNAL (stateChanged(QMediaPlayer::State)), this, SLOT (playStateChanged(QMediaPlayer::State)) );
-
     videoWidget = new QVideoWidget;
     this->setVideoOutput(videoWidget);
+    videoWidget->installEventFilter(this);
 
-//    timeSlider = new QSlider(Qt::Horizontal);
+    timeSlider = new QSlider(Qt::Horizontal);
+    name = new  QLabel();
+    name->setStyleSheet("font-weight: bold;font: 15pt Arial Bold");
 
 
-    const QString qVidButtonStyleSheet = "QPushButton { background-color: #3949ab; color: white; border-radius: 8px;} QPushButton:hover {background-color: #6f74dd;}";
-
-    //set up the playback buttons
-    playButton = new QPushButton;
-    playButton->setIconSize(QSize(90,40));
-    playButton->setStyleSheet(qVidButtonStyleSheet);
-    playButton->setIcon(QIcon((":/playback_images/pause.png")));
+    playButton = new playerBtn("pause");
     connect(playButton, SIGNAL (released()), this, SLOT (playClicked()));
 
-    ffButton = new QPushButton;
-    ffButton->setIconSize(QSize(90,40));
-    ffButton->setStyleSheet(qVidButtonStyleSheet);
-    ffButton->setIcon(QIcon((":/playback_images/ff.png")));
+    ffButton = new playerBtn("ff");
     connect(ffButton, SIGNAL (released()), this, SLOT (ffClicked()));
 
-    rewindButton = new QPushButton;
-    rewindButton->setIconSize(QSize(90,40));
-    rewindButton->setStyleSheet(qVidButtonStyleSheet);
-    rewindButton->setIcon(QIcon((":/playback_images/rewind.png")));
+    rewindButton = new playerBtn("rewind");;
     connect(rewindButton, SIGNAL (released()), this, SLOT (rewindClicked()));
 
-    nextButton = new QPushButton;
-    nextButton->setIconSize(QSize(90,40));
-    nextButton->setStyleSheet(qVidButtonStyleSheet);
-    nextButton->setIcon(QIcon((":/playback_images/next.png")));
+    nextButton = new playerBtn("next");;
     connect(nextButton, SIGNAL (released()), this, SLOT (nextClicked()));
 
-    restartButton = new QPushButton;
-    restartButton->setIconSize(QSize(90,40));
-    restartButton->setStyleSheet(qVidButtonStyleSheet);
-    restartButton->setIcon(QIcon((":/playback_images/restart.png")));
+    restartButton = new playerBtn("restart");;
     connect(restartButton, SIGNAL (released()), this, SLOT (restartClicked()));
 
-    listBtn = new QPushButton;
-    listBtn->setIconSize(QSize(90,40));
-    listBtn->setStyleSheet(qVidButtonStyleSheet);
+    listBtn = new playerBtn("hidden");
     listBtn->setCheckable(true);
-    listBtn->setIcon(QIcon((":/playback_images/hidden.png")));
     connect(listBtn,SIGNAL(clicked(bool)),this,SIGNAL(sigOpenList(bool)));
 
+    volumeBtn = new playerBtn("volume");
+    volumeBtn->setCheckable(true);
+    connect(volumeBtn,SIGNAL(clicked(bool)),this,SLOT(sltMute(bool)));
+
+    fullScreenBtn = new playerBtn("full");
+    fullScreenBtn->setCheckable(true);
+    connect(fullScreenBtn,&QPushButton::clicked,[=](bool){videoWidget->setFullScreen(true);});
+
+    volumeSlider = new QSlider(Qt::Horizontal);
+    volumeSlider->setRange(0,100);
     //set up the layout
     QVBoxLayout *mainLayout = new QVBoxLayout();
+    mainLayout->addWidget(name,1,Qt::AlignCenter);
     mainLayout->addWidget(videoWidget);
     mainLayout->addWidget(timeSlider);
     QHBoxLayout *controlsLayout = new QHBoxLayout();
+
+    controlsLayout->addWidget(listBtn);
+    controlsLayout->addWidget(fullScreenBtn);
     controlsLayout->addWidget(restartButton);
     controlsLayout->addWidget(rewindButton);
     controlsLayout->addWidget(playButton);
     controlsLayout->addWidget(ffButton);
     controlsLayout->addWidget(nextButton);
-    controlsLayout->addWidget(listBtn);
+    controlsLayout->addWidget(volumeBtn);
+    controlsLayout->addWidget(volumeSlider);
     mainLayout->addLayout(controlsLayout);
+
 
     display = new QWidget;
     display->setLayout(mainLayout);
 
-//    connect(timeSlider,SIGNAL(sliderPressed()),this,SLOT(onPress()));
-//    connect(timeSlider,SIGNAL(sliderReleased()),this,SLOT(onRelease()));
+    connect(timeSlider,SIGNAL(sliderPressed()),this,SLOT(sltPress()));
+    connect(timeSlider,SIGNAL(sliderReleased()),this,SLOT(sltRelease()));
 
-//    connect(this,SIGNAL(positionChanged(qint64)),this,SLOT(onPosition(qint64)));
-//    connect(this,SIGNAL(durationChanged(qint64)),this,SLOT(onDuration(qint64)));
+    connect(this,SIGNAL(positionChanged(qint64)),this,SLOT(sltPosition(qint64)));
+    connect(this,SIGNAL(durationChanged(qint64)),this,SLOT(sltDuration(qint64)));
+    connect(volumeSlider,SIGNAL(valueChanged(int)),this,SLOT(sltVolumeChanged(int)));
 }
 
 // all buttons have been setup, store pointers here
@@ -88,49 +88,74 @@ void ThePlayer::setContent(std::vector<TheButton*>* b, std::vector<TheButtonInfo
     currentInfo = buttons->at(0)->info;
     setMedia(* currentInfo->url);
     play();
-    buttons->at(0)->init(&infos->at(infos->size()-1));
+
+    QString data =currentInfo->url->toString();
+    QFileInfo file(data);
+    data = file.baseName();
+    name->setText(data);
+    //buttons->at(0)->init(&infos->at(infos->size()-1));
 }
 
-void ThePlayer::playStateChanged (QMediaPlayer::State ms) {
-    setPlaybackRate(1);
 
-    switch (ms) {
-    case QMediaPlayer::State::StoppedState:
-        //play(); // starting playing again...
-        playButton->setIcon(QIcon((":/playback_images/play.png")));
-        break;
-    case QMediaPlayer::State::PausedState:
-        playButton->setIcon(QIcon((":/playback_images/play.png")));
-        break;
-    case QMediaPlayer::State::PlayingState:
-        playButton->setIcon(QIcon((":/playback_images/pause.png")));
-        break;
-    default:
-        break;
+bool ThePlayer::eventFilter(QObject *watched, QEvent *event)
+{
+    if(watched == videoWidget)
+    {
+        if(event->type() == QEvent::MouseButtonDblClick)
+        {
+            if(videoWidget->isFullScreen())
+            {
+                videoWidget->setFullScreen(false);
+            }
+            else
+            {
+                videoWidget->setFullScreen(true);
+            }
+        }
+    }
+
+    return QMediaPlayer::eventFilter(watched,event);
+}
+
+
+void ThePlayer::sltMute(bool flag)
+{
+    if(flag)
+    {
+        this->setMuted(true);
+    }
+    else
+    {
+        this->setMuted(false);
     }
 }
 
-//void ThePlayer::onPosition(qint64 time)
-//{
-//    if(!isPress)
-//        timeSlider->setValue(time);
-//}
+void ThePlayer::sltVolumeChanged(int val)
+{
+    this->setVolume(val);
+}
 
-//void ThePlayer::onDuration(qint64 time)
-//{
-//    timeSlider->setRange(0,time);
-//}
+void ThePlayer::sltPosition(qint64 time)
+{
+    if(!isPress)
+        timeSlider->setValue(time);
+}
 
-//void ThePlayer::onPress()
-//{
-//    isPress = true;
-//}
+void ThePlayer::sltDuration(qint64 time)
+{
+    timeSlider->setRange(0,time);
+}
 
-//void ThePlayer::onRelease()
-//{
-//    isPress = false;
-//    this->setPosition(timeSlider->value());
-//}
+void ThePlayer::sltPress()
+{
+    isPress = true;
+}
+
+void ThePlayer::sltRelease()
+{
+    isPress = false;
+    this->setPosition(timeSlider->value());
+}
 
 void ThePlayer::playClicked() {
 
@@ -143,14 +168,17 @@ void ThePlayer::playClicked() {
     switch (this->state()) {
     case QMediaPlayer::State::StoppedState:
         play();
+        playButton->name = "pause";
         playButton->setIcon(QIcon((":/playback_images/pause.png")));
         break;
     case QMediaPlayer::State::PausedState:
         play();
+        playButton->name = "pause";
         playButton->setIcon(QIcon((":/playback_images/pause.png")));
         break;
     case QMediaPlayer::State::PlayingState:
         pause();
+        playButton->name = "play";
         playButton->setIcon(QIcon((":/playback_images/play.png")));
         break;
     }
@@ -169,7 +197,7 @@ void ThePlayer::rewindClicked() {
 void ThePlayer::nextClicked() {
     TheButtonInfo *temp = currentInfo;
 
-    currentInfo = buttons->at(0)->info;
+    currentInfo = buttons->at(1)->info;
     setMedia(* currentInfo->url);
     setPlaybackRate(1);
     play();
@@ -189,16 +217,28 @@ void ThePlayer::restartClicked() {
 
 void ThePlayer::jumpTo (TheButtonInfo* button) {
     //swap clicked button info with current playing info
+    if(currentInfo==button)
+            return;
+
     for (unsigned long long i=0; i < buttons->size(); i++) {
         if (buttons->at(i)->info == button) {
-            for (unsigned long long j=i; j < buttons->size()-1; j++)
+            for (unsigned long long j=i; j <buttons->size()-1; j++)
                 buttons->at(j)->init(buttons->at(j+1)->info);
-            buttons->at(buttons->size()-1)->init(currentInfo);
+            break;
         }
     }
+    buttons->at(buttons->size()-1)->init(currentInfo);
 
     currentInfo = button;
+    buttons->at(0)->init(currentInfo);
     setMedia(* currentInfo->url);
     setPlaybackRate(1);
     play();
+    playButton->name = "pause";
+    playButton->setIcon(QIcon((":/playback_images/pause.png")));
+    QString data =button->url->toString();
+    QFileInfo file(data);
+    data = file.baseName();
+    name->setText(data);
 }
+

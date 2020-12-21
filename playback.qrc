@@ -6,6 +6,8 @@
         <file>playback_images/rewind.png</file>
         <file>playback_images/restart.png</file>
         <file>playback_images/next.png</file>
-	<file>playback_images/hidden.png</file>
+         <file>playback_images/hidden.png</file>
+         <file>playback_images/volume.png</file>
+        <file>playback_images/full.png</file>
     </qresource>
 </RCC>

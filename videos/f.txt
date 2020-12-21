@@ -1,4 +1,0 @@
-Project type ：MOV file
-The video time：00：00：09
-Location: Zoo
-Video size: 21,412,017 bytes

@@ -1,4 +1,0 @@
-Project type ：MOV file
-The video time：00：00：15
-Location: Room
-Video size: 21,347,406 bytes

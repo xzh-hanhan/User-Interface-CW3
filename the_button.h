@@ -16,9 +16,12 @@ class TheButtonInfo {
 public:
     QUrl* url; // video file to play
     QIcon* icon; // icon to display
-    QString string;//information to disaplay
+    QString data;//information to disaplay
+    QString dev;
+    QString pos;
 
-    TheButtonInfo ( QUrl* url, QIcon* icon,QString string) : url (url), icon (icon),string(string) {}
+
+    TheButtonInfo ( QUrl* url, QIcon* icon,QString dev,QString pos) : url (url), icon (icon),dev(dev), pos(pos) {}
 };
 
 class TheButton : public QPushButton {
@@ -28,23 +31,25 @@ public:
     TheButtonInfo* info;
 
      TheButton(QWidget *parent) :  QPushButton(parent) {
-         parent->setStyleSheet("QPushButton { background-color: #3949ab; color: white;} QPushButton:hover {background-color: #6f74dd;}");
+         parent->setStyleSheet("QPushButton {color: black;} QPushButton:hover {background-color: #b5b5b5;}");
          setIconSize(QSize(200,110));
          connect(this, SIGNAL(released()), this, SLOT (clicked() )); // if QPushButton clicked...then run clicked() below
     }
 
+    void mousePressEvent(QMouseEvent *event);
     void enterEvent(QEvent *e);
     void leaveEvent(QEvent *e);
-//    bool event(QEvent *e);
 
     void init(TheButtonInfo* i);
 
 
 private slots:
     void clicked();
+    void rightclick();
 
 signals:
     void jumpTo(TheButtonInfo*);
+    void right();
 
 };
 
