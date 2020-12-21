@@ -5,58 +5,31 @@
 #include "the_player.h"
 #include<QHelpEvent>
 #include<QToolTip>
+#include <QTime>
 
 using namespace std;
 
 
 ThePlayer::ThePlayer() : QMediaPlayer(NULL) {
-    setVolume(0); // be slightly less annoying
+    setVolume(80); // be slightly less annoying
     setNotifyInterval(1);
+    volumeSlider->setRange(0,100);
+    volumeSlider->setValue(80);
 
-    videoWidget = new QVideoWidget;
+    videoWidget->setMinimumHeight(480);
     this->setVideoOutput(videoWidget);
     videoWidget->installEventFilter(this);
 
-    timeSlider = new QSlider(Qt::Horizontal);
-    name = new  QLabel();
+    timeLayout->addWidget(timeSlider);
+    timelabel->setText("00:00/00:00");
+    timeLayout->addWidget(timelabel);
+
     name->setStyleSheet("font-weight: bold;font: 15pt Arial Bold");
 
-
-    playButton = new playerBtn("pause");
-    connect(playButton, SIGNAL (released()), this, SLOT (playClicked()));
-
-    ffButton = new playerBtn("ff");
-    connect(ffButton, SIGNAL (released()), this, SLOT (ffClicked()));
-
-    rewindButton = new playerBtn("rewind");;
-    connect(rewindButton, SIGNAL (released()), this, SLOT (rewindClicked()));
-
-    nextButton = new playerBtn("next");;
-    connect(nextButton, SIGNAL (released()), this, SLOT (nextClicked()));
-
-    restartButton = new playerBtn("restart");;
-    connect(restartButton, SIGNAL (released()), this, SLOT (restartClicked()));
-
-    listBtn = new playerBtn("hidden");
-    listBtn->setCheckable(true);
-    connect(listBtn,SIGNAL(clicked(bool)),this,SIGNAL(sigOpenList(bool)));
-
-    volumeBtn = new playerBtn("volume");
-    volumeBtn->setCheckable(true);
-    connect(volumeBtn,SIGNAL(clicked(bool)),this,SLOT(sltMute(bool)));
-
-    fullScreenBtn = new playerBtn("full");
-    fullScreenBtn->setCheckable(true);
-    connect(fullScreenBtn,&QPushButton::clicked,[=](bool){videoWidget->setFullScreen(true);});
-
-    volumeSlider = new QSlider(Qt::Horizontal);
-    volumeSlider->setRange(0,100);
-    //set up the layout
-    QVBoxLayout *mainLayout = new QVBoxLayout();
     mainLayout->addWidget(name,1,Qt::AlignCenter);
     mainLayout->addWidget(videoWidget);
-    mainLayout->addWidget(timeSlider);
-    QHBoxLayout *controlsLayout = new QHBoxLayout();
+    mainLayout->addLayout(timeLayout);
+    mainLayout->addLayout(controlsLayout);
 
     controlsLayout->addWidget(listBtn);
     controlsLayout->addWidget(fullScreenBtn);
@@ -66,19 +39,30 @@ ThePlayer::ThePlayer() : QMediaPlayer(NULL) {
     controlsLayout->addWidget(ffButton);
     controlsLayout->addWidget(nextButton);
     controlsLayout->addWidget(volumeBtn);
-    controlsLayout->addWidget(volumeSlider);
-    mainLayout->addLayout(controlsLayout);
+    controlsLayout->addWidget(volumeSlider);  
 
-
-    display = new QWidget;
+    setfunctions();
     display->setLayout(mainLayout);
+}
 
+void ThePlayer::setfunctions(){
+    playButton->setCheckable(true);
+    connect(playButton,SIGNAL(clicked(bool)),this,SLOT(sltPlay(bool)));
+    connect(ffButton,SIGNAL(released()),this,SLOT(sltSender()));
+    connect(rewindButton,SIGNAL(released()),this,SLOT(sltSender()));
+    connect(nextButton, SIGNAL (released()), this, SLOT (nextClicked()));
+    connect(restartButton, SIGNAL (released()), this, SLOT (restartClicked()));
+    listBtn->setCheckable(true);
+    connect(listBtn,SIGNAL(clicked(bool)),this,SIGNAL(sigOpenList(bool)));
+    connect(volumeBtn,SIGNAL(released()),this,SLOT(sltMute()));
+    fullScreenBtn->setCheckable(true);
+    connect(fullScreenBtn,&QPushButton::clicked,[=](bool){videoWidget->setFullScreen(true);});
     connect(timeSlider,SIGNAL(sliderPressed()),this,SLOT(sltPress()));
     connect(timeSlider,SIGNAL(sliderReleased()),this,SLOT(sltRelease()));
-
     connect(this,SIGNAL(positionChanged(qint64)),this,SLOT(sltPosition(qint64)));
     connect(this,SIGNAL(durationChanged(qint64)),this,SLOT(sltDuration(qint64)));
     connect(volumeSlider,SIGNAL(valueChanged(int)),this,SLOT(sltVolumeChanged(int)));
+    connect(this,SIGNAL(stateChanged(QMediaPlayer::State)),this,SLOT(sltState(QMediaPlayer::State)));
 }
 
 // all buttons have been setup, store pointers here
@@ -93,7 +77,6 @@ void ThePlayer::setContent(std::vector<TheButton*>* b, std::vector<TheButtonInfo
     QFileInfo file(data);
     data = file.baseName();
     name->setText(data);
-    //buttons->at(0)->init(&infos->at(infos->size()-1));
 }
 
 
@@ -112,38 +95,129 @@ bool ThePlayer::eventFilter(QObject *watched, QEvent *event)
                 videoWidget->setFullScreen(true);
             }
         }
+        else if(event->type() == QEvent::MouseButtonRelease){
+            playClicked();
+        }
+        else if(event->type() == QEvent::KeyPress)
+        {
+            QKeyEvent* keyevent = (QKeyEvent*)event;
+            if(keyevent->key() == Qt::Key_Escape && videoWidget->isFullScreen())
+            {
+                videoWidget->setFullScreen(false);
+            }
+
+        }
     }
 
     return QMediaPlayer::eventFilter(watched,event);
 }
 
 
-void ThePlayer::sltMute(bool flag)
+void ThePlayer::sltMute()
 {
-    if(flag)
+    if(this->volume()!=0)
     {
         this->setMuted(true);
+        volumeSlider->setValue(0);
     }
     else
     {
         this->setMuted(false);
+        volumeSlider->setValue(80);
+
     }
 }
 
 void ThePlayer::sltVolumeChanged(int val)
 {
     this->setVolume(val);
+    if(val==0)
+        this->setMuted(true);
+}
+
+void ThePlayer::sltSender()
+{
+    if(this->state() == QMediaPlayer::StoppedState)
+        return ;
+
+    QPushButton* btn = (QPushButton*)sender();
+    qint64 time = this->position();
+    if(rewindButton == btn)
+    {
+        time -= 5000;
+        if(time < 0)
+        {
+            this->stop();
+            return ;
+        }
+    }
+    else
+    {
+        time += 5000;
+
+        if(time > this->duration())
+        {
+            this->stop();
+            return ;
+        }
+    }
+
+    this->setPosition(time);
+}
+
+void ThePlayer::sltState(QMediaPlayer::State newstate)
+{
+
+    switch (newstate) {
+    case QMediaPlayer::State::StoppedState:
+        playButton->setChecked(false);
+        playButton->name = "play";
+        playButton->setIcon(QIcon((":/playback_images/play.png")));
+        timeSlider->setValue(0);
+        break;
+    case QMediaPlayer::State::PausedState:
+        playButton->name = "play";
+        playButton->setIcon(QIcon((":/playback_images/play.png")));
+        playButton->setChecked(false);
+        break;
+    case QMediaPlayer::State::PlayingState:
+        playButton->name = "pause";
+        playButton->setIcon(QIcon((":/playback_images/pause.png")));
+        playButton->setChecked(true);
+        break;
+    }
+
+}
+
+void ThePlayer::sltPlay(bool flag)
+{
+    if(flag)
+    {
+        play();
+    }
+    else
+    {
+        pause();
+    }
 }
 
 void ThePlayer::sltPosition(qint64 time)
 {
     if(!isPress)
         timeSlider->setValue(time);
+
+    timelabel->setText(QString("%1/%2").arg(QTime::fromMSecsSinceStartOfDay(time).toString("mm:ss"))
+                               .arg(QTime::fromMSecsSinceStartOfDay(timeSlider->maximum()).toString("mm:ss")));
 }
 
 void ThePlayer::sltDuration(qint64 time)
 {
     timeSlider->setRange(0,time);
+
+    timelabel->setText(QString("%1/%2").arg(QTime::fromMSecsSinceStartOfDay(0).toString("mm:ss"))
+                               .arg(QTime::fromMSecsSinceStartOfDay(time).toString("mm:ss")));
+
+
 }
 
 void ThePlayer::sltPress()

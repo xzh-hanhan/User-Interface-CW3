@@ -46,9 +46,10 @@ void TheButton::rightclick() {
  void TheButton::enterEvent(QEvent *e)
  {
     QEnterEvent *enterEvent = static_cast<QEnterEvent*>(e);
-    info->data = "Device:\t\t\t" + info->dev + "\n"
-                +"Position:\t\t\t" + info->pos + "\n" + "\n"
-                + "RightClick to Update Information.";
+    info->data = "Device:\t\t" + info->dev + "\n"
+                +"Time:\t\t" + info->time + "\n"
+                +"Position:\t\t" + info->pos + "\n"
+                +"Size:\t\t" + info->size;
     QToolTip::showText(enterEvent->globalPos(),info->data,this);
  }
  void TheButton::leaveEvent(QEvent *e)

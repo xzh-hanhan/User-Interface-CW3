@@ -18,10 +18,14 @@ public:
     QIcon* icon; // icon to display
     QString data;//information to disaplay
     QString dev;
+    QString time;
     QString pos;
+    QString size;
 
 
-    TheButtonInfo ( QUrl* url, QIcon* icon,QString dev,QString pos) : url (url), icon (icon),dev(dev), pos(pos) {}
+
+    TheButtonInfo ( QUrl* url, QIcon* icon,QString dev,QString time,QString pos,QString size) : url (url), icon (icon),
+        dev(dev), time(time), pos(pos), size(size) {}
 };
 
 class TheButton : public QPushButton {
@@ -39,6 +43,7 @@ public:
     void mousePressEvent(QMouseEvent *event);
     void enterEvent(QEvent *e);
     void leaveEvent(QEvent *e);
+//    bool event(QEvent *e);
 
     void init(TheButtonInfo* i);
 

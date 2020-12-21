@@ -32,19 +32,25 @@ private:
     long updateCount = 0;
     TheButtonInfo* currentInfo; //info of the video currently playing
 
-    QVideoWidget *videoWidget = 0;
-    playerBtn *playButton = 0;
-    playerBtn *ffButton = 0;
-    playerBtn *rewindButton = 0;
-    playerBtn *nextButton = 0;
-    playerBtn *restartButton = 0;
-    playerBtn* listBtn = 0;
-    playerBtn* volumeBtn = 0;
-    playerBtn* fullScreenBtn = 0;
-    QSlider* volumeSlider = 0;
-    QSlider* timeSlider = 0;
-    QWidget *display = 0;
-    QLabel *name;
+    //set up the layout
+    QVBoxLayout *mainLayout = new QVBoxLayout();
+    QVideoWidget *videoWidget = new QVideoWidget;
+    QHBoxLayout *timeLayout = new QHBoxLayout();
+    QHBoxLayout *controlsLayout = new QHBoxLayout();
+
+    playerBtn *playButton = new playerBtn("play");
+    playerBtn *ffButton = new playerBtn("ff");
+    playerBtn *rewindButton = new playerBtn("rewind");
+    playerBtn *nextButton = new playerBtn("next");
+    playerBtn *restartButton = new playerBtn("restart");
+    playerBtn* listBtn = new playerBtn("hidden");
+    playerBtn* volumeBtn = new playerBtn("volume");
+    playerBtn* fullScreenBtn = new playerBtn("full");
+    QSlider* volumeSlider = new QSlider(Qt::Horizontal);
+    QSlider* timeSlider = new QSlider(Qt::Horizontal);
+    QWidget *display = new QWidget;
+    QLabel *name = new  QLabel();
+    QLabel* timelabel = new QLabel();
 
     bool isPress = false;
 public:
@@ -54,7 +60,7 @@ public:
 
     QWidget* getDisplay() const { return display; }
     TheButtonInfo* getInfo() { return currentInfo; }
-
+    void setfunctions();
 
     bool eventFilter(QObject *watched, QEvent *event);
 signals:
@@ -70,9 +76,15 @@ private slots:
     void sltDuration(qint64 time);
     void sltPress();
     void sltRelease();
-    void sltMute(bool flag);
+    void sltMute();
     void sltVolumeChanged(int val);
 
+
+    void sltSender();
+
+    void sltState(QMediaPlayer::State newstate);
+
+    void sltPlay(bool flag);
 public slots:
     // start playing this ButtonInfo
     void jumpTo (TheButtonInfo* button);

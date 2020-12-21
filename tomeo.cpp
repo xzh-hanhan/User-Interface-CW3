@@ -32,6 +32,7 @@
 #include <QScrollArea>
 #include <QPalette>
 #include<QLineEdit>
+#include <QFileDialog>
 
 
 using namespace std;
@@ -58,24 +59,35 @@ vector<TheButtonInfo> getInfoIn (string loc) {
             QString thumb = f.left( f .length() - 4) +".png";
             QFileInfo fi(f);
             QString text = fi.baseName() + ".txt";
+            QString init = ":/initfile/" + fi.baseName() + ".txt";
             QFileInfo ff(text);
+            QFileInfo fff(init);
             QString pos;
+            QString time;
             QString dev;
+            QString size;
             if(ff.exists()){
                 QFile *file =new QFile(text);
                 file->open(QIODevice::ReadOnly|QIODevice::Text);
                 QTextStream stream( file );
-                stream>>dev>>pos;
+                stream>>dev>>time>>pos>>size;
+            }
+            else if(fff.exists()){
+                QFile *file =new QFile(init);
+                file->open(QIODevice::ReadOnly|QIODevice::Text);
+                QTextStream stream( file );
+                stream>>dev>>time>>pos>>size;
             }
             else{
                 QFile *file =new QFile(text);
                 file->open(QIODevice::WriteOnly|QIODevice::Text);
                 QTextStream stream( file );
                 pos = "null";
+                time = "null";
                 dev = "null";
-                stream<<dev<<" "<<pos;
+                size = "null";
+                stream<<dev<<" "<<time<<" "<<pos<<" "<<size;
             }
-
 
             if (QFile(thumb).exists()) { // if a png thumbnail exists
                 QImageReader *imageReader = new QImageReader(thumb);
@@ -83,7 +95,7 @@ vector<TheButtonInfo> getInfoIn (string loc) {
                     if (!sprite.isNull()) {
                         QIcon* ico = new QIcon(QPixmap::fromImage(sprite)); // voodoo to create an icon for the button
                         QUrl* url = new QUrl(QUrl::fromLocalFile( f )); // convert the file location to a generic url
-                        out . push_back(TheButtonInfo( url , ico , dev , pos ) ); // add to the output list
+                        out . push_back(TheButtonInfo( url , ico , dev ,time , pos , size ) ); // add to the output list
                     }
                     else
                         qDebug() << "1 warning: skipping video because I couldn't process thumbnail " << thumb << endl;
@@ -96,7 +108,7 @@ vector<TheButtonInfo> getInfoIn (string loc) {
                     if (!missingThumbSprite.isNull()) {
                         QIcon* ico = new QIcon(QPixmap::fromImage(missingThumbSprite)); // voodoo to create an icon for the button
                         QUrl* url = new QUrl(QUrl::fromLocalFile( f )); // convert the file location to a generic url
-                        out . push_back(TheButtonInfo( url , ico , dev , pos ) );// add to the output list
+                        out . push_back(TheButtonInfo( url , ico , dev ,time , pos , size ) );// add to the output list
                     }
                     else
                         qDebug() << "2 warning: skipping video because I couldn't process thumbnail " << missingThumb << endl;
@@ -109,38 +121,11 @@ vector<TheButtonInfo> getInfoIn (string loc) {
 
 
 int main(int argc, char *argv[]) {
-
     // let's just check that Qt is operational first
     qDebug() << "Qt version: " << QT_VERSION_STR << endl;
 
     // create the Qt Application
     QApplication app(argc, argv);
-
-    // collect all the videos in the folder
-    vector<TheButtonInfo> videos;
-
-    if (argc == 2)
-        videos = getInfoIn( string(argv[1]) );
-
-    if (videos.size() == 0) {
-
-        const int result = QMessageBox::question(
-                    NULL,
-                    QString("Tomeo"),
-                    QString("no videos found! download, unzip, and add command line argument to \"quoted\" file location. Download videos from Tom's OneDrive?"),
-                    QMessageBox::Yes |
-                    QMessageBox::No );
-
-        switch( result )
-        {
-        case QMessageBox::Yes:
-          QDesktopServices::openUrl(QUrl("https://leeds365-my.sharepoint.com/:u:/g/personal/scstke_leeds_ac_uk/EcGntcL-K3JOiaZF4T_uaA4BHn6USbq2E55kF_BTfdpPag?e=n1qfuN"));
-          break;
-        default:
-            break;
-        }
-        exit(-1);
-    }
 
     // the QMediaPlayer which controls the playback
     ThePlayer *player = new ThePlayer;
@@ -153,20 +138,89 @@ int main(int argc, char *argv[]) {
     QVBoxLayout *layout = new QVBoxLayout();
     buttonWidget->setLayout(layout);
 
-
-
-
     QWidget *classwidget = new QWidget();
     QVBoxLayout *classlayout = new QVBoxLayout();
     classwidget->setLayout(classlayout);
     classBtn *allBtn = new classBtn();
     classBtn *devBtn = new classBtn();
     classBtn *posBtn = new classBtn();
+    QHBoxLayout *searchlayout = new QHBoxLayout();
+    QPushButton *search = new QPushButton();
+    search->setText("Search");
+    QLineEdit *edit = new QLineEdit();
+    edit->setPlaceholderText("Name,Device or Position");
+    searchlayout->addWidget(edit);
+    searchlayout->addWidget(search);
 
     QLabel *upNextTitle = new QLabel(buttonWidget);
     upNextTitle->setText(" Playlist:");
-    upNextTitle->setStyleSheet("font-weight: bold; font: 30pt Arial Bold");
+    upNextTitle->setStyleSheet("font-weight: bold; font: 30pt Arial Bold;background:#b5b5b5");
     classlayout->addWidget(upNextTitle);
+
+    QScrollArea *scrollArea = new QScrollArea;
+    scrollArea->setBackgroundRole(QPalette::Dark);
+    scrollArea->setWidget(buttonWidget);
+    scrollArea->setFixedWidth(295);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    allBtn->setText("All");
+    classlayout->addWidget(scrollArea);
+    classlayout->addWidget(allBtn);
+    classlayout->addWidget(devBtn);
+    classlayout->addWidget(posBtn);
+    classlayout->addLayout(searchlayout);
+
+
+    // create the main window and layout
+    QWidget window;
+    QVBoxLayout *mainContainer = new QVBoxLayout();
+    window.setLayout(mainContainer);
+    window.setWindowTitle("Tomeo Editor");
+    window.setMinimumSize(1000, 680);
+
+
+    QWidget *navigationWidget = new QWidget();
+    navigationWidget->setFixedSize(window.width(),40);
+    QLabel *pageTitle = new QLabel(navigationWidget);
+    pageTitle->setText("Tomeo Prototype");
+    pageTitle->setGeometry(0,0,navigationWidget->width(),navigationWidget->height());
+    pageTitle->setStyleSheet("font-weight: bold; font: 20pt Arial Bold");
+    mainContainer->addWidget(navigationWidget);
+
+
+    QWidget *playerDisplay = player->getDisplay();
+    QHBoxLayout *videoPreviewContainer = new QHBoxLayout();
+    // add the video and the buttons to the top level
+    videoPreviewContainer->addWidget(playerDisplay);
+    videoPreviewContainer->addWidget(classwidget);
+
+    mainContainer->addLayout(videoPreviewContainer);
+    // showtime!
+    window.show();
+
+    QObject::connect(player,&ThePlayer::sigOpenList,[=](bool flag){
+        classwidget->setVisible(!flag);
+    });
+
+    // collect all the videos in the folder
+    vector<TheButtonInfo> videos;
+
+    if (argc == 2)
+        videos = getInfoIn( string(argv[1]));
+
+    if (videos.size() == 0) {
+        const int result = QMessageBox::question(0,"Tomeo","There is no video in the folder, please select the folder manually");
+        if(result == QMessageBox::Yes)
+        {
+            QString path = QFileDialog::getExistingDirectory(0);
+            if(path != "")  videos = getInfoIn(path.toStdString());
+            else            exit(-1);
+
+        }
+        else    exit(-1);
+    }
+
+
     // create buttons for all videos
     for ( int i = 0; i < static_cast<int>(videos.size()); i++ ) {
         TheButton *button = new TheButton(buttonWidget);
@@ -200,26 +254,26 @@ int main(int argc, char *argv[]) {
             mainWindow->setWindowTitle(QWidget::tr("Update"));
             mainWindow->show();
             okBtn->connect(okBtn,&QPushButton::released,[button,edit1,edit2,mainWindow,devBtn,posBtn](){
-                button->info->dev = edit1->text();
-                button->info->pos = edit2->text();
-                QString f = button->info->url->toString();
-                QFileInfo fi(f);
-                f = fi.baseName() + ".txt";
-                QFile *file =new QFile(f);
-                file->open(QIODevice::WriteOnly|QIODevice::Text);
-                QTextStream stream( file );
-                stream<<button->info->dev<<" "<<button->info->pos;
-                file->close();
-                devBtn->devto(button->info);
-                posBtn->posto(button->info);
-                mainWindow->close();
-            });
+                        button->info->dev = edit1->text();
+                        button->info->pos = edit2->text();
+                        QString f = button->info->url->toString();
+                        QFileInfo fi(f);
+                        f = fi.baseName() + ".txt";
+                        QFile *file =new QFile(f);
+                        file->open(QIODevice::WriteOnly|QIODevice::Text);
+                        QTextStream stream( file );
+                        stream<<button->info->dev<<" "<<button->info->time<<" "<<button->info->pos<<" "<<button->info->size;
+                        file->close();
+                        devBtn->devto(button->info);
+                        posBtn->posto(button->info);
+                        mainWindow->close();
+                    });
            calBtn->connect(calBtn,&QPushButton::released,[mainWindow](){
-                mainWindow->close();
-            });
-        });
+                        mainWindow->close();
+                    });
+           });
         allBtn->connect(allBtn,&QPushButton::released,[button](){
-            button->setVisible(true);
+                button->setVisible(true);
         });
         devBtn->connect(devBtn,&QPushButton::released,[devBtn,button](){
             if(button->info->dev == devBtn->text())
@@ -233,76 +287,23 @@ int main(int argc, char *argv[]) {
             else
                 button->setVisible(false);
         });
-//        search->connect(search,&QPushButton::released,[edit,button](){
-//            QString path = button->info->url->toString();
-//            QFileInfo file(path);
-//            QString name = file.baseName();
-//            if(button->info->dev == edit->text() || button->info->pos == edit->text() || name == edit->text() || edit->text()=="" )
-//                button->setVisible(true);
-//            else
-//                button->setVisible(false);
-//        });
+        search->connect(search,&QPushButton::released,[edit,button](){
+                    QString path = button->info->url->toString();
+                    QFileInfo file(path);
+                    QString name = file.baseName();
+                    if(button->info->dev == edit->text() || button->info->pos == edit->text() || name == edit->text() || edit->text()=="" )
+                        button->setVisible(true);
+                    else
+                        button->setVisible(false);
+                });
         buttons.push_back(button);
         layout->addWidget(button);
         button->init(&videos.at(i));
     }
-
-
-
-
     // tell the player what buttons and videos are available
     player->setContent(&buttons, & videos);
-
-
-    QScrollArea *scrollArea = new QScrollArea;
-    scrollArea->setBackgroundRole(QPalette::Dark);
-    scrollArea->setWidget(buttonWidget);
-    scrollArea->setFixedWidth(295);
-    scrollArea->setWidgetResizable(true);
-    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    allBtn->setText("All");
     devBtn->setText(player->getInfo()->dev);
     posBtn->setText(player->getInfo()->pos);
-    classlayout->addWidget(scrollArea);
-    classlayout->addWidget(allBtn);
-    classlayout->addWidget(devBtn);
-    classlayout->addWidget(posBtn);
-    //classlayout->addLayout(searchlayout);
-
-
-    // create the main window and layout
-    QWidget window;
-    QVBoxLayout *mainContainer = new QVBoxLayout();
-    window.setLayout(mainContainer);
-    window.setWindowTitle("Tomeo Editor");
-    window.setMinimumSize(800, 680);
-
-
-    QWidget *navigationWidget = new QWidget();
-    navigationWidget->setFixedSize(window.width(),40);
-    QLabel *pageTitle = new QLabel(navigationWidget);
-    pageTitle->setText("Tomeo Prototype");
-    pageTitle->setGeometry(0,0,navigationWidget->width(),navigationWidget->height());
-    pageTitle->setStyleSheet("font-weight: bold; font: 20pt Arial Bold");
-    mainContainer->addWidget(navigationWidget);
-
-
-    QWidget *playerDisplay = player->getDisplay();
-    QHBoxLayout *videoPreviewContainer = new QHBoxLayout();
-    // add the video and the buttons to the top level
-    videoPreviewContainer->addWidget(playerDisplay);
-    videoPreviewContainer->addWidget(classwidget);
-
-    mainContainer->addLayout(videoPreviewContainer);
-    // showtime!
-    window.show();
-
-    QObject::connect(player,&ThePlayer::sigOpenList,[=](bool flag){
-        classwidget->setVisible(!flag);
-    });
-
-
-
     // wait for the app to terminate
     return app.exec();
 }

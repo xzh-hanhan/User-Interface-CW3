@@ -26,6 +26,6 @@ else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
 
 RESOURCES += \
-    playback.qrc \
-    txtfile.qrc
+    initfile.qrc \
+    playback.qrc
 

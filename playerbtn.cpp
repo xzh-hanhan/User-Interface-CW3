@@ -7,6 +7,7 @@ playerBtn::playerBtn(QString n)
     setIconSize(QSize(60,40));
     setStyleSheet(qVidButtonStyleSheet);
     setIcon(QIcon((icon)));
+
 }
 
 void playerBtn::enterEvent(QEvent *e)
